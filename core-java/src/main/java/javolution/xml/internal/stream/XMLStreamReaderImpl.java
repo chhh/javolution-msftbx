@@ -394,6 +394,8 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
             _namespaces.pop();
             CharArray startElem = _elemStack[_depth--];
             _start = _index = startElem.offset();
+
+            // TODO: does this loop do anything at all?
             while (_seqs[--_seqsIndex] != startElem) { // Recycles CharArray instances.
             }
         }
@@ -404,6 +406,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
             if ((_readIndex >= _readCount) && isEndOfStream())
                 return _eventType; // END_DOCUMENT or CHARACTERS.
             char c = _readBuffer[_readIndex++];
+			_location._totalCharsRead++;
             if (c <= '&')
                 c = (c == '&') ? replaceEntity()
                         : (c < ' ') ? handleEndOfLine(c) : c;
@@ -436,6 +439,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                         if ((_readIndex >= _readCount) && isEndOfStream())
                             return _eventType;
                         c = _readBuffer[_readIndex++];
+						_location._totalCharsRead++;
                         if (c <= '&')
                             c = (c == '&') ? replaceEntity()
                                     : (c < ' ') ? handleEndOfLine(c) : c;
@@ -469,6 +473,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                         if (_readIndex >= _readCount)
                             reloadBuffer();
                         c = _readBuffer[_readIndex++];
+						_location._totalCharsRead++;
                         if (c < ' ')
                             c = handleEndOfLine(c);
                         _data[_index++] = c;
@@ -510,6 +515,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                                 return _eventType = CHARACTERS;
                             }
                         } else if (c != '!') { // Element tag (first letter).
+							_location._lastStartTagPos = _location._totalCharsRead - 2;
                             _data[_start] = c;
                             _index = _start + 1;
                             _state = STATE_OPEN_TAGxREAD_ELEM_NAME;
@@ -575,6 +581,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                         if (_readIndex >= _readCount)
                             reloadBuffer();
                         c = _readBuffer[_readIndex++];
+						_location._totalCharsRead++;
                         if (c < ' ')
                             c = handleEndOfLine(c);
                         _data[_index++] = c;
@@ -622,6 +629,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                         if (_readIndex >= _readCount)
                             reloadBuffer();
                         c = _data[_index++] = _readBuffer[_readIndex++];
+						_location._totalCharsRead++;
                     }
                     break;
 
@@ -661,6 +669,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                         if (_readIndex >= _readCount)
                             reloadBuffer();
                         _data[_index++] = c = _readBuffer[_readIndex++];
+						_location._totalCharsRead++;
                     }
                     break;
 
@@ -697,6 +706,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                         if (_readIndex >= _readCount)
                             reloadBuffer();
                         c = _readBuffer[_readIndex++];
+						_location._totalCharsRead++;
                         if (c == '&')
                             c = replaceEntity();
                         _data[_index++] = c;
@@ -717,6 +727,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                         if (_readIndex >= _readCount)
                             reloadBuffer();
                         c = _readBuffer[_readIndex++];
+						_location._totalCharsRead++;
                         if (c == '&')
                             c = replaceEntity();
                         _data[_index++] = c;
@@ -757,6 +768,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                         if (_readIndex >= _readCount)
                             reloadBuffer();
                         c = _data[_index++] = _readBuffer[_readIndex++];
+						_location._totalCharsRead++;
                     }
                     break;
 
@@ -814,11 +826,6 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
 
     /**
      * Reloads data buffer.
-     * 
-     * @param detectEndOfStream indicates 
-     * @return <code>true</code> if the buffer has been reloaded;
-     *         <code>false</code> if the end of stream has being reached
-     *         and the event type (CHARACTERS or END_DOCUMENT) has been set.
      */
     private void reloadBuffer() throws XMLStreamException {
         if (_reader == null)
@@ -885,8 +892,10 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
             // #xD#xA will be replaced by #xA
             if (_readIndex >= _readCount)
                 reloadBuffer();
-            if ((_readIndex < _readCount) && (_readBuffer[_readIndex] == 0xA))
+            if ((_readIndex < _readCount) && (_readBuffer[_readIndex] == 0xA)) {
                 _readIndex++; // Skips 0xD
+				_location._totalCharsRead++;
+			}
             c = (char) 0xA;
         }
         if (c == 0xA) {
@@ -914,6 +923,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
             if (_readIndex >= _readCount)
                 reloadBuffer();
             char c = _data[_index++] = _readBuffer[_readIndex++];
+			_location._totalCharsRead++;
             if (c == ';')
                 break;
             if (c <= ' ')
@@ -934,7 +944,8 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
         if (_readIndex >= _readCount)
             reloadBuffer();
         char c = _readBuffer[_readIndex++];
-        return (c == '&') ? (c = replaceEntity()) : c;
+		_location._totalCharsRead++;
+        return c == '&' ? replaceEntity() : c;
     }
 
     /**
@@ -1076,13 +1087,17 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
     /**
      * This inner class represents the parser location.
      */
-    private final class LocationImpl implements Location {
+    public final class LocationImpl implements Location {
 
         int _column;
 
         int _line;
 
         int _charactersRead;
+		
+		long _lastStartTagPos;
+		
+		long _totalCharsRead;
 
         public int getLineNumber() {
             return _line + 1;
@@ -1095,7 +1110,15 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
         public int getCharacterOffset() {
             return _charactersRead + _readIndex;
         }
-
+		
+		public long getLastStartTagPos() {
+			return _lastStartTagPos;
+		}
+		
+		public long getTotalCharsRead() {
+			return _totalCharsRead;
+		}
+		
         public String getPublicId() {
             return null; // Not available.
         }
@@ -1112,6 +1135,8 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
             _line = 0;
             _column = 0;
             _charactersRead = 0;
+			_lastStartTagPos = -1;
+			_totalCharsRead = 0;
         }
 
     }
@@ -1256,7 +1281,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
         return localName;
     }
 
-    public Location getLocation() {
+    public LocationImpl getLocation() {
         return _location;
     }
 
@@ -1465,6 +1490,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                 _readBuffer[_startOffset++] = '<';
                 return "UTF-16BE";
             } else if ((byte0 == '<') && (byte1 == 0)) { // UTF-16 LITTLE ENDIAN
+                // TODO: this will never be triggered, because of line 1477, which returns if (byte0 == '<')
                 _readBuffer[_startOffset++] = '<';
                 return "UTF-16LE";
             } else if ((byte0 == 0xFF) && (byte1 == 0xFE)) { // BOM for UTF-16 LITTLE ENDIAN
