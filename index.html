@@ -35,9 +35,12 @@
 <h2>
 <a id="to-build-java-jars-yourself" class="anchor" href="#to-build-java-jars-yourself" aria-hidden="true"><span class="octicon octicon-link"></span></a>To build java jars yourself</h2>
 
-<p>You'll need maven installed.
+<p>You'll need maven installed.<br>
 Change working directory to <code>&lt;local-repo-path&gt;/java-core</code> and execute:<br>
-<code>mvn clean compile package</code></p>
+<code>mvn clean compile package</code><br>
+or<br>
+<code>mvn clean compile package -Dmaven.test.skip=true</code><br>
+if some of the non-critical tests fail<br></p>
 
 <p><img src="http://javolution.org/src/site/css/img/javolution.png" alt="Powered by Javolution"></p>
 
