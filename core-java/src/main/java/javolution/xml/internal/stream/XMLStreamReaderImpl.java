@@ -2,7 +2,7 @@
  * Javolution - Java(TM) Solution for Real-Time and Embedded Systems
  * Copyright (C) 2012 - Javolution (http://javolution.org/)
  * All rights reserved.
- * 
+ *
  * Permission to use, copy, modify, and distribute this software is
  * freely granted, provided that this notice is preserved.
  */
@@ -18,20 +18,15 @@ import javolution.io.UTF8StreamReader;
 import javolution.lang.Realtime;
 import javolution.text.CharArray;
 import javolution.xml.sax.Attributes;
-import javolution.xml.stream.Location;
-import javolution.xml.stream.NamespaceContext;
-import javolution.xml.stream.XMLInputFactory;
-import javolution.xml.stream.XMLStreamConstants;
-import javolution.xml.stream.XMLStreamException;
-import javolution.xml.stream.XMLStreamReader;
+import javolution.xml.stream.*;
 
 /**
  * {@link XMLStreamReader} implementation.
- *     
+ *
  * This implementation returns all contiguous character data in a single
- * chunk (always coalescing). It is non-validating (DTD is returned 
- * unparsed). Although, users may define custom entities mapping using 
- * the {@link #setEntities} method (e.g. after parsing/resolving 
+ * chunk (always coalescing). It is non-validating (DTD is returned
+ * unparsed). Although, users may define custom entities mapping using
+ * the {@link #setEntities} method (e.g. after parsing/resolving
  * external entities).
  */
 @Realtime
@@ -136,7 +131,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
      */
     private CharArray _text;
 
-    /** 
+    /**
      * Holds the reader input source (<code>null</code> when unused).
      */
     private Reader _reader;
@@ -188,18 +183,18 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
     private final UTF8StreamReader _utf8StreamReader = new UTF8StreamReader();
 
     /**
-     * Holds the factory (if any) 
+     * Holds the factory (if any)
      */
     private final XMLInputFactoryImpl _factory;
 
-    /** 
+    /**
      * Default constructor.
      */
     public XMLStreamReaderImpl() {
         this(null);
     }
 
-    /** 
+    /**
      * Factory-based constructor.
      */
     XMLStreamReaderImpl(XMLInputFactoryImpl factory) {
@@ -207,7 +202,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
     }
 
     /**
-     * Sets the input stream source for this XML stream reader 
+     * Sets the input stream source for this XML stream reader
      * (encoding retrieved from XML prolog if any). This method
      * attempts to detect the encoding automatically.
      *
@@ -243,11 +238,11 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
     public void setInput(InputStream in, String encoding)
             throws XMLStreamException {
         _encoding = encoding;
-        
+
         if(_encoding==null) {
         	_encoding = detectEncoding(in);
         }
-        
+
         if (isUTF8(_encoding)) { // Use our fast UTF-8 Reader.
             setInput(_utf8StreamReader.setInput(in));
         } else {
@@ -260,7 +255,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
     }
 
     /**
-     * Sets the reader input source for this XML stream reader. 
+     * Sets the reader input source for this XML stream reader.
      * This method reads the prolog (if any).
      *
      * @param  reader the input source reader.
@@ -292,8 +287,8 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
         }
     }
 
-    /** 
-     * Returns the current depth of the element. Outside the root element, 
+    /**
+     * Returns the current depth of the element. Outside the root element,
      * the depth is 0. The depth is incremented by 1 when a start tag is
      * reached. The depth is decremented AFTER the end tag event was observed.
      * [code]
@@ -304,7 +299,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
      *    </foobar>         2
      * </root>              1
      * <!-- outside -->     0 [/code]
-     * 
+     *
      * @return the nesting depth.
      */
     public int getDepth() {
@@ -313,7 +308,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
 
     /**
      * Returns the qualified name of the current event.
-     * 
+     *
      * @return the qualified name.
      * @throws IllegalStateException if this not a START_ELEMENT or END_ELEMENT.
      */
@@ -361,10 +356,10 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
      *     XMLStreamReaderImpl reader = new XMLStreamReaderImpl();
      *     reader.setEntities(HTML_ENTITIES);
      * [/code]
-     * The entities mapping may be changed dynamically (e.g. 
+     * The entities mapping may be changed dynamically (e.g.
      * after reading the DTD and all external entities references are resolved).
-     * 
-     * @param entities the entities to replacement texts mapping 
+     *
+     * @param entities the entities to replacement texts mapping
      *        (both must be <code>CharSequence</code> instances).
      */
     public void setEntities(Map<String, String> entities) {
@@ -373,7 +368,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
 
     /**
      * Returns the textual representation of this reader current state.
-     * 
+     *
      * @return the textual representation of the current state.
      */
     public String toString() {
@@ -837,7 +832,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
             _readCount = _reader.read(_readBuffer, 0, _readBuffer.length);
             if ((_readCount <= 0)
                     && ((_depth != 0) || (_state != STATE_CHARACTERS)))
-                throw new XMLStreamException("Unexpected end of document",
+                throw new XMLUnexpectedEndOfDocumentException("Unexpected end of document",
                         _location);
         } catch (IOException e) {
             throw new XMLStreamException(e);
@@ -849,7 +844,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
 
     /**
      * Detects end of stream.
-     * 
+     *
      * @return <code>true</code> if end of stream has being reached
      *         and the event type (CHARACTERS or END_DOCUMENT) has been set;
      *         <code>false</code> otherwise.
@@ -882,7 +877,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
 
     /**
      * Handles end of line as per XML Spec. 2.11
-     * 
+     *
      * @param c the potential end of line character.
      * @return the replacement character for end of line.
      */
@@ -908,7 +903,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
 
     /**
      * Replaces an entity if the current state allows it.
-     * 
+     *
      * @return the next character after the text replacement or '&' if no
      *         replacement took place.
      */
@@ -985,7 +980,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
 
     private void processEndTag() throws XMLStreamException {
         if (!_qName.equals(_elemStack[_depth]))
-            throw new XMLStreamException("Unexpected end tag for " + _qName,
+            throw new XMLUnexpectedEndTagException("Unexpected end tag for " + _qName,
                     _location);
     }
 
@@ -1062,10 +1057,10 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
 
     // Increases internal data buffer capacity.
     private void increaseDataBuffer() {
-        // Note: The character data at any nesting level is discarded 
+        // Note: The character data at any nesting level is discarded
         //       only when moving to outer nesting level (due to coalescing).
         //       This accumulation may cause resize of the data buffer if
-        //       numerous elements at the same nesting level are separated by 
+        //       numerous elements at the same nesting level are separated by
         //       spaces or indentation.
         char[] tmp = new char[_data.length * 2];
         javolution.context.LogContext.info(new CharArray(
@@ -1094,9 +1089,9 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
         int _line;
 
         int _charactersRead;
-		
+
 		long _lastStartTagPos;
-		
+
 		long _totalCharsRead;
 
         public int getLineNumber() {
@@ -1110,15 +1105,15 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
         public int getCharacterOffset() {
             return _charactersRead + _readIndex;
         }
-		
+
 		public long getLastStartTagPos() {
 			return _lastStartTagPos;
 		}
-		
+
 		public long getTotalCharsRead() {
 			return _totalCharsRead;
 		}
-		
+
         public String getPublicId() {
             return null; // Not available.
         }
@@ -1179,7 +1174,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                     || eventType == XMLStreamConstants.COMMENT) {
                 // Skips (not kept).
             } else if (eventType == XMLStreamConstants.END_DOCUMENT) {
-                throw new XMLStreamException(
+                throw new XMLUnexpectedEndOfDocumentException(
                         "Unexpected end of document when reading element text content",
                         getLocation());
             } else if (eventType == XMLStreamConstants.START_ELEMENT) {
