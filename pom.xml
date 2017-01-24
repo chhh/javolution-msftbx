@@ -15,7 +15,7 @@
 
     <!--<groupId>com.github.chhh</groupId>-->
 	<artifactId>javolution-core-java-msftbx</artifactId>
-    <version>6.11.1</version>
+    <version>6.11.2-SNAPSHOT</version>
 	<packaging>bundle</packaging>
 	<name>Javolution Core (Java) for MSFTBX</name>
 	<description>Only the Java Core part of Javolution library, with slight modifications for use in MSFTBX.</description>
@@ -42,7 +42,7 @@
         <connection>${scm.url}</connection>
         <developerConnection>${scm.url}</developerConnection>
         <url>${scm.url}</url>
-        <tag>v6.11.1</tag>
+        <tag>6.11.1</tag>
     </scm>
 
     
