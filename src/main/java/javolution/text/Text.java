@@ -993,7 +993,6 @@ public final class Text implements CharSequence, Comparable<CharSequence>,
 	 * specified character, searching backward
 	 *
 	 * @param c the character to search for.
-	 * @param fromIndex the index to start the search backward from.
 	 * @return the index of the first occurrence of the character in this text
 	 *         that is less than or equal to <code>fromIndex</code>, 
 	 *         or <code>-1</code> if the character does not occur.

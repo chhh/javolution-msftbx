@@ -19,6 +19,7 @@
 	<packaging>bundle</packaging>
 	<name>Javolution Core (Java) for MSFTBX</name>
 	<description>Only the Java Core part of Javolution library, with slight modifications for use in MSFTBX.</description>
+    <url>https://github.com/chhh/javolution-msftbx</url>
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -42,7 +43,7 @@
         <connection>${scm.url}</connection>
         <developerConnection>${scm.url}</developerConnection>
         <url>${scm.url}</url>
-        <tag>6.11.1</tag>
+        <tag>v6.11.1</tag>
     </scm>
 
     
@@ -90,7 +91,7 @@
 	<build>
 		<plugins>
 
-			<!-- ======================================================= -->
+            <!-- ======================================================= -->
 			<!-- OSGi Packaging -->
 			<!-- ======================================================= -->
 			<plugin>

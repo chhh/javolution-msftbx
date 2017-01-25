@@ -41,7 +41,7 @@ import java.lang.annotation.Target;
  *    public static final Reducer<Integer> SUM = new Reducer<Integer>() { ... }
  * }[/code]
  *  
- * <p> Classes with no internal fields or {@link javolution.lang.Immutable 
+ * <p> Classes with no internal fields or {@code javolution.lang.Immutable
  *     Immutable} are usually parallelizable and mutex-free.</p>
  *
  * @author  <a href="mailto:jean-marie@dautelle.com">Jean-Marie Dautelle</a>
