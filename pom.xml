@@ -9,18 +9,28 @@
     <parent>
         <groupId>com.github.chhh</groupId>
         <artifactId>sonatype-ossrh-parent</artifactId>
-        <version>0.1</version>
-        <relativePath>../../sonatype-ossrh</relativePath>
+        <version>0.5</version>
+        <!--<relativePath>../../sonatype-ossrh</relativePath>-->
     </parent>
 
     <!--<groupId>com.github.chhh</groupId>-->
 	<artifactId>javolution-core-java-msftbx</artifactId>
-    <version>6.11.2-SNAPSHOT</version>
+    <version>6.11.3</version>
 	<packaging>bundle</packaging>
-	<name>Javolution Core (Java) for MSFTBX</name>
+
+    <name>Javolution Core (Java) for MSFTBX</name>
 	<description>Only the Java Core part of Javolution library, with slight modifications for use in MSFTBX.</description>
     <url>https://github.com/chhh/javolution-msftbx</url>
-    
+
+
+    <scm>
+        <connection>${scm.url}</connection>
+        <developerConnection>${scm.url}</developerConnection>
+        <url>${scm.url}</url>
+        <tag>v6.11.3</tag>
+    </scm>
+
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -39,14 +49,6 @@
         </developer>
     </developers>
 
-    <scm>
-        <connection>${scm.url}</connection>
-        <developerConnection>${scm.url}</developerConnection>
-        <url>${scm.url}</url>
-        <tag>v6.11.1</tag>
-    </scm>
-
-    
 
 	<!-- ======================================================= -->
 	<!-- OSGi Dependencies -->
