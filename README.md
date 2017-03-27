@@ -10,8 +10,15 @@ The original project is hosted at http://javolution.org/
  `e instanceof XMLUnexpectedEndTagException` instead of checking exception message.
 
 ## Builds
-Pre-built jars are available at https://github.com/chhh/javolution/releases.<br/>
-Built with Oracle's Java 7 compiler.
+Get from [Maven Central](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22com.github.chhh%22%20AND%20a%3A%22javolution-core-java-msftbx%22). Built with Oracle's Java 7 compiler.  
+```xml
+<dependency>
+    <groupId>com.github.chhh</groupId>
+    <artifactId>javolution-core-java-msftbx</artifactId>
+    <version>6.11.4</version>
+</dependency>
+```  
+
 
 ## Building yourself
 You'll need maven installed.<br/>
@@ -21,4 +28,4 @@ or<br/>
 `mvn clean compile package -Dmaven.test.skip=true`<br/>
 if some of the non-critical tests fail<br/>
 
-![Powered by Javolution](http://javolution.org/src/site/css/img/javolution.png)
+![Powered by Javolution](http://javolution.org/css/img/javolution.png)
