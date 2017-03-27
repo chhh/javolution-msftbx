@@ -161,6 +161,7 @@
 					<excludePackageNames>javax.*,*.internal</excludePackageNames>
 					<overview>${project.build.directory}/colorized/javolution/doc-files/overview.html</overview>
 					<docfilessubdirs>true</docfilessubdirs>
+					<failOnError>false</failOnError>
 				</configuration>
 				<executions>
 					<execution>
