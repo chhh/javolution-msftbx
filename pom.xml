@@ -58,16 +58,19 @@
 			<groupId>org.osgi</groupId>
 			<artifactId>org.osgi.core</artifactId>
 			<version>4.3.1</version>
+			<optional>true</optional>
 		</dependency>
 		<dependency> <!-- OSGI Compendium (log service) -->
 			<groupId>org.osgi</groupId>
 			<artifactId>org.osgi.compendium</artifactId>
 			<version>4.3.1</version>
+			<optional>true</optional>
 		</dependency>
 		<dependency> <!-- OpenCL Binding -->
 			<groupId>com.nativelibs4java</groupId>
 			<artifactId>javacl</artifactId>
 			<version>1.0.0-RC3</version>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
