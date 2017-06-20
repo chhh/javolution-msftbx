@@ -8,17 +8,21 @@
  */
 package javolution.xml.internal.stream;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.UnsupportedEncodingException;
-import java.util.Map;
 import javolution.io.UTF8StreamReader;
 import javolution.lang.Realtime;
 import javolution.text.CharArray;
 import javolution.xml.sax.Attributes;
 import javolution.xml.stream.*;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Map;
 
 /**
  * {@link XMLStreamReader} implementation.
@@ -141,6 +145,12 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
      */
     private final char[] _readBuffer = new char[READER_BUFFER_CAPACITY];
 
+    /** Holds the first 16 bytes of the input stream, used for BOM detection. */
+    private final byte[] _bomBuffer = new byte[BOM_BUF_LEN];
+    private int _bomBufferRead = 0;
+    private BOM _bom = BOM.NONE;
+    private final static int BOM_BUF_LEN = 16;
+
     /**
      * Holds the start offset in the character buffer (due to auto detection
      * of encoding).
@@ -170,7 +180,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
     /**
      * Holds stream encoding if known.
      */
-    private String _encoding;
+    private Charset _encoding;
 
     /**
      * Holds the entities.
@@ -201,6 +211,12 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
         _factory = factory;
     }
 
+    private static boolean isUTF8(Object encoding) {
+        return encoding.equals("utf-8") || encoding.equals("UTF-8")
+                || encoding.equals("ASCII") || encoding.equals("utf8")
+                || encoding.equals("UTF8");
+    }
+
     /**
      * Sets the input stream source for this XML stream reader
      * (encoding retrieved from XML prolog if any). This method
@@ -209,24 +225,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
      * @param  in the input source with unknown encoding.
      */
     public void setInput(InputStream in) throws XMLStreamException {
-        setInput(in, detectEncoding(in));
-        CharArray prologEncoding = getCharacterEncodingScheme();
-
-        // Checks if necessary to change the reader.
-        if ((prologEncoding != null) && !prologEncoding.equals(_encoding)
-                && !(isUTF8(prologEncoding) && isUTF8(_encoding))) {
-            // Changes reader (keep characters already read).
-            int startOffset = _readCount;
-            reset();
-            _startOffset = startOffset;
-            setInput(in, prologEncoding.toString());
-        }
-    }
-
-    private static boolean isUTF8(Object encoding) {
-        return encoding.equals("utf-8") || encoding.equals("UTF-8")
-                || encoding.equals("ASCII") || encoding.equals("utf8")
-                || encoding.equals("UTF8");
+        setInput(in, null);
     }
 
     /**
@@ -235,23 +234,31 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
      * @param in the input source.
      * @param encoding the associated encoding.
      */
-    public void setInput(InputStream in, String encoding)
-            throws XMLStreamException {
-        _encoding = encoding;
+    public void setInput(InputStream in, String encoding) throws XMLStreamException {
+        // first try to detect encoding by BOM
+        detectBom(in);
 
-        if(_encoding==null) {
-        	_encoding = detectEncoding(in);
-        }
-
-        if (isUTF8(_encoding)) { // Use our fast UTF-8 Reader.
-            setInput(_utf8StreamReader.setInput(in));
-        } else {
-            try {
-                setInput(new InputStreamReader(in, encoding));
-            } catch (UnsupportedEncodingException e) {
-                throw new XMLStreamException(e);
+        if (BOM.NONE.equals(_bom)) {
+            if (encoding == null) {
+                _encoding = StandardCharsets.UTF_8; // assume UTF-8
+            } else {
+                try {
+                    _encoding = Charset.forName(encoding);
+                } catch (Exception e) {
+                    throw new XMLStreamException("Unknown or unsupported encoding provided", e);
+                }
             }
+        } else {
+            _encoding = Charset.forName(_bom.toString());
         }
+
+        Reader reader;
+        if (StandardCharsets.UTF_8.equals(_encoding)) { // Use our fast UTF-8 Reader.
+            reader = _utf8StreamReader.setInput(in);
+        } else {
+            reader = new InputStreamReader(in, _encoding);
+        }
+        setInput(reader);
     }
 
     /**
@@ -830,10 +837,11 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
         _readIndex = 0;
         try {
             _readCount = _reader.read(_readBuffer, 0, _readBuffer.length);
-            if ((_readCount <= 0)
-                    && ((_depth != 0) || (_state != STATE_CHARACTERS)))
-                throw new XMLUnexpectedEndOfDocumentException("Unexpected end of document",
-                        _location);
+            if (_readCount <= 0) { // end of stream
+                if ((_depth != 0) || (_state != STATE_CHARACTERS)) {
+                    throw new XMLUnexpectedEndOfDocumentException("Unexpected end of document", _location);
+                }
+            }
         } catch (IOException e) {
             throw new XMLStreamException(e);
         }
@@ -1009,6 +1017,8 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
         _namespaces.reset();
         _prolog = null;
         _readCount = 0;
+        _bomBufferRead = 0;
+        _bom = BOM.NONE;
         _reader = null;
         _depth = 0;
         _readIndex = 0;
@@ -1258,7 +1268,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
     private static final CharArray ENCODING = new CharArray("encoding");
 
     public String getEncoding() {
-        return _encoding;
+        return _encoding.name();
     }
 
     public int getEventType() {
@@ -1459,43 +1469,42 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                 + NAMES_OF_EVENTS[_eventType] + ")");
     }
 
-    private String detectEncoding(InputStream input) throws XMLStreamException {
-        // Autodetect encoding (see http://en.wikipedia.org/wiki/UTF-16)
-        int byte0;
-        try {
-            byte0 = input.read();
-        } catch (IOException e) {
-            throw new XMLStreamException(e);
-        }
-        if (byte0 == -1)
-            throw new XMLStreamException("Premature End-Of-File");
-        if (byte0 == '<') { // UTF-8 or compatible encoding.
-            _readBuffer[_startOffset++] = '<';
-            return "UTF-8";
-        } else {
-            int byte1;
-            try {
-                byte1 = input.read();
-            } catch (IOException e) {
-                throw new XMLStreamException(e);
+    private void detectBom(InputStream input) throws XMLStreamException {
+
+        final BOM[] boms = BOM.values();
+        Arrays.sort(boms, new Comparator<BOM>() { // sort by descending bom byte length
+            @Override
+            public int compare(BOM o1, BOM o2) {
+                return Integer.compare(o2.bytes.length, o1.bytes.length);
             }
-            if (byte1 == -1)
-                throw new XMLStreamException("Premature End-Of-File");
-            if ((byte0 == 0) && (byte1 == '<')) { // UTF-16 BIG ENDIAN
-                _readBuffer[_startOffset++] = '<';
-                return "UTF-16BE";
-            } else if ((byte0 == '<') && (byte1 == 0)) { // UTF-16 LITTLE ENDIAN
-                // TODO: this will never be triggered, because of line 1477, which returns if (byte0 == '<')
-                _readBuffer[_startOffset++] = '<';
-                return "UTF-16LE";
-            } else if ((byte0 == 0xFF) && (byte1 == 0xFE)) { // BOM for UTF-16 LITTLE ENDIAN
-                return "UTF-16";
-            } else if ((byte0 == 0xFE) && (byte1 == 0xFF)) { // BOM for UTF-16 BIG ENDIAN
-                return "UTF-16";
-            } else { // Encoding unknown (or no prolog) assumes UTF-8
-                _readBuffer[_startOffset++] = (char) byte0;
-                _readBuffer[_startOffset++] = (char) byte1;
-                return "UTF-8";
+        });
+
+        try {
+            _bomBufferRead = input.read(_bomBuffer);
+        } catch (IOException e) {
+            throw new XMLStreamException("Error reading the first " + _bomBuffer.length + " bytes from input stream for BOM detection", e);
+        }
+
+        // if we couldn't read enough bytes even for the shortest BOM, there probably isn't any
+        if (_bomBufferRead < boms[0].bytes.length) {
+            _bom = BOM.NONE;
+            return;
+        }
+
+        // try match known BOMs to the read sequence
+        for (BOM bom : boms) {
+            if (bom.bytes.length > _bomBufferRead)
+                continue;
+            boolean matches = true;
+            for (int i = 0; i < bom.bytes.length; i++) {
+                if (_bomBuffer[i] != bom.bytes[i]) {
+                    matches = false;
+                    break;
+                }
+            }
+            if (matches) {
+                _bom = bom;
+                break;
             }
         }
     }
