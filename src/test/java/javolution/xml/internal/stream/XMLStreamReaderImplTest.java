@@ -16,9 +16,11 @@ public class XMLStreamReaderImplTest {
     @Test
     public void setInput() throws Exception {
         //final String s = "C:\\projects\\repos\\msdk\\msdk-io\\msdk-io-mzml2\\src\\test\\resources\\RawCentriodCidWithMsLevelInRefParamGroup.mzML";
-        final String s = "C:\\projects\\repos\\msdk\\msdk-io\\msdk-io-mzml2\\src\\test\\resources\\RawCentriodCidWithMsLevelInRefParamGroupFormatted.mzML";
+        final String isBom = "C:\\projects\\repos\\msdk\\msdk-io\\msdk-io-mzml2\\src\\test\\resources\\RawCentriodCidWithMsLevelInRefParamGroupFormatted.mzML";
+        final String noBom = "C:\\projects\\repos\\msdk\\msdk-io\\msdk-io-mzml2\\src\\test\\resources\\RawCentriodCidWithMsLevelInRefParamGroupFormattedNoBom.mzML";
+        final String noBom16 = "C:\\projects\\repos\\msdk\\msdk-io\\msdk-io-mzml2\\src\\test\\resources\\RawCentriodCidWithMsLevelInRefParamGroupFormattedNoBomUTF16.mzML";
         final XMLStreamReaderImpl reader = new XMLStreamReaderImpl();
-        final FileInputStream fis = new FileInputStream(s);
+        final FileInputStream fis = new FileInputStream(isBom);
         final BufferedInputStream bis = new BufferedInputStream(fis);
         reader.setInput(bis);
 
