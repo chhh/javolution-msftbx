@@ -14,10 +14,7 @@ import javolution.text.CharArray;
 import javolution.xml.sax.Attributes;
 import javolution.xml.stream.*;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -239,16 +236,16 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
         detectBom(in);
 
         if (BOM.NONE.equals(_bom)) {
-            if (encoding == null) {
+            if (encoding == null) { // no encoding provided, and NONE detected
                 _encoding = StandardCharsets.UTF_8; // assume UTF-8
-            } else {
+            } else { // try parse provided encoding
                 try {
                     _encoding = Charset.forName(encoding);
                 } catch (Exception e) {
                     throw new XMLStreamException("Unknown or unsupported encoding provided", e);
                 }
             }
-        } else {
+        } else { // detected encoding from BOM, use it
             _encoding = Charset.forName(_bom.toString());
         }
 
@@ -258,7 +255,71 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
         } else {
             reader = new InputStreamReader(in, _encoding);
         }
+
+        // during BOM detection we've read a few bytes from the input stream
+        // need to restore
+        if (_bomBufferRead > 0) {
+            final ByteArrayInputStream bais = new ByteArrayInputStream(_bomBuffer);
+            bais.skip(_bom.bytes.length);
+            final InputStreamReader isr = new InputStreamReader(bais, _encoding);
+            final char[] bomCharBuf = new char[_bomBuffer.length];
+            int bomCharsRead = -1;
+            try {
+                 bomCharsRead = isr.read(bomCharBuf);
+            } catch (IOException e) {
+                throw new XMLStreamException(e);
+            }
+            if (bomCharsRead > 0) {
+                _startOffset = bomCharsRead;
+                _readCount += bomCharsRead;
+                for (int i = 0; i < bomCharsRead; i++) {
+                    _readBuffer[i] = bomCharBuf[i];
+                }
+            }
+        }
+
+
         setInput(reader);
+    }
+
+    private void detectBom(InputStream input) throws XMLStreamException {
+
+        final BOM[] boms = BOM.values();
+        Arrays.sort(boms, new Comparator<BOM>() { // sort by descending bom byte length
+            @Override
+            public int compare(BOM o1, BOM o2) {
+                return Integer.compare(o2.bytes.length, o1.bytes.length);
+            }
+        });
+
+        try {
+            _bomBufferRead = input.read(_bomBuffer);
+        } catch (IOException e) {
+            throw new XMLStreamException("Error reading the first " + _bomBuffer.length + " bytes from input stream for BOM detection", e);
+        }
+
+        // if we couldn't read enough bytes even for the shortest BOM, there probably isn't any
+        if (_bomBufferRead < boms[0].bytes.length) {
+            _bom = BOM.NONE;
+            return;
+        }
+
+        // try match known BOMs to the read sequence
+        for (BOM bom : boms) {
+            if (bom.bytes.length > _bomBufferRead)
+                continue;
+            boolean matches = true;
+            for (int i = 0; i < bom.bytes.length; i++) {
+                if (_bomBuffer[i] != bom.bytes[i]) {
+                    matches = false;
+                    break;
+                }
+            }
+            if (matches) {
+                _bom = bom;
+                break;
+            }
+        }
     }
 
     /**
@@ -279,6 +340,7 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                     _readBuffer.length - _startOffset);
             _readCount = (readCount >= 0) ? readCount + _startOffset
                     : _startOffset;
+
             if ((_readCount >= 5) && (_readBuffer[0] == '<')
                     && (_readBuffer[1] == '?') && (_readBuffer[2] == 'x')
                     && (_readBuffer[3] == 'm') && (_readBuffer[4] == 'l')
@@ -1124,6 +1186,10 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
 			return _totalCharsRead;
 		}
 
+		public int getBomLength() {
+            return _bom.bytes.length;
+        }
+
         public String getPublicId() {
             return null; // Not available.
         }
@@ -1467,46 +1533,6 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
     private IllegalStateException illegalState(String msg) {
         return new IllegalStateException(msg + " ("
                 + NAMES_OF_EVENTS[_eventType] + ")");
-    }
-
-    private void detectBom(InputStream input) throws XMLStreamException {
-
-        final BOM[] boms = BOM.values();
-        Arrays.sort(boms, new Comparator<BOM>() { // sort by descending bom byte length
-            @Override
-            public int compare(BOM o1, BOM o2) {
-                return Integer.compare(o2.bytes.length, o1.bytes.length);
-            }
-        });
-
-        try {
-            _bomBufferRead = input.read(_bomBuffer);
-        } catch (IOException e) {
-            throw new XMLStreamException("Error reading the first " + _bomBuffer.length + " bytes from input stream for BOM detection", e);
-        }
-
-        // if we couldn't read enough bytes even for the shortest BOM, there probably isn't any
-        if (_bomBufferRead < boms[0].bytes.length) {
-            _bom = BOM.NONE;
-            return;
-        }
-
-        // try match known BOMs to the read sequence
-        for (BOM bom : boms) {
-            if (bom.bytes.length > _bomBufferRead)
-                continue;
-            boolean matches = true;
-            for (int i = 0; i < bom.bytes.length; i++) {
-                if (_bomBuffer[i] != bom.bytes[i]) {
-                    matches = false;
-                    break;
-                }
-            }
-            if (matches) {
-                _bom = bom;
-                break;
-            }
-        }
     }
 
     private final CharArray readPrologAttribute(CharSequence name) {
