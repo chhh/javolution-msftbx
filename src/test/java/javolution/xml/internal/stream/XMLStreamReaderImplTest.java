@@ -16,10 +16,10 @@ public class XMLStreamReaderImplTest {
     @Test
     public void setInput() throws Exception {
         String[] files = new String[]{
-        //final String s = "C:\\projects\\repos\\msdk\\msdk-io\\msdk-io-mzml2\\src\\test\\resources\\RawCentriodCidWithMsLevelInRefParamGroup.mzML";
-            /* final String isBom = */ "C:\\projects\\repos\\msdk\\msdk-io\\msdk-io-mzml2\\src\\test\\resources\\RawCentriodCidWithMsLevelInRefParamGroupFormatted.mzML",
-            /* final String noBom = */ "C:\\projects\\repos\\msdk\\msdk-io\\msdk-io-mzml2\\src\\test\\resources\\RawCentriodCidWithMsLevelInRefParamGroupFormattedNoBom.mzML",
-            /* final String noBom16 = */ "C:\\projects\\repos\\msdk\\msdk-io\\msdk-io-mzml2\\src\\test\\resources\\RawCentriodCidWithMsLevelInRefParamGroupFormattedNoBomUTF16.mzML",
+//        //final String s = "C:\\projects\\repos\\msdk\\msdk-io\\msdk-io-mzml2\\src\\test\\resources\\RawCentriodCidWithMsLevelInRefParamGroup.mzML";
+//            /* final String isBom = */ "C:\\projects\\repos\\msdk\\msdk-io\\msdk-io-mzml2\\src\\test\\resources\\RawCentriodCidWithMsLevelInRefParamGroupFormatted.mzML",
+//            /* final String noBom = */ "C:\\projects\\repos\\msdk\\msdk-io\\msdk-io-mzml2\\src\\test\\resources\\RawCentriodCidWithMsLevelInRefParamGroupFormattedNoBom.mzML",
+//            /* final String noBom16 = */ "C:\\projects\\repos\\msdk\\msdk-io\\msdk-io-mzml2\\src\\test\\resources\\RawCentriodCidWithMsLevelInRefParamGroupFormattedNoBomUTF16.mzML",
         };
         for (String file : files) {
             final XMLStreamReaderImpl reader = new XMLStreamReaderImpl();
