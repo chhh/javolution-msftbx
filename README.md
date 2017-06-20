@@ -15,7 +15,7 @@ Get from [Maven Central](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22com.
 <dependency>
     <groupId>com.github.chhh</groupId>
     <artifactId>javolution-core-java-msftbx</artifactId>
-    <version>6.11.4</version>
+    <version>6.11.6</version>
 </dependency>
 ```  
 
