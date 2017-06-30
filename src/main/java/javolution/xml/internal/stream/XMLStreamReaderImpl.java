@@ -455,12 +455,14 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                 return _eventType = END_ELEMENT;
             }
         } else if (_eventType == END_ELEMENT) {
-            _namespaces.pop();
-            CharArray startElem = _elemStack[_depth--];
-            _start = _index = startElem.offset();
+            // we might be reading from the middle of a document
+            if (_depth > 0) {
+                _namespaces.pop();
+                CharArray startElem = _elemStack[_depth--];
+                _start = _index = startElem.offset();
 
-            // TODO: does this loop do anything at all?
-            while (_seqs[--_seqsIndex] != startElem) { // Recycles CharArray instances.
+                while (_seqs[--_seqsIndex] != startElem) { // Recycles CharArray instances.
+                }
             }
         }
         // Reader loop.
@@ -818,8 +820,9 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                                 _qName = newSeq(_start, --_index - _start);
                                 _start = _index;
                                 _state = STATE_CHARACTERS;
+                                _eventType = END_ELEMENT;
                                 processEndTag();
-                                return _eventType = END_ELEMENT;
+                                return _eventType;
                             } else if (c == ':') {
                                 _prefixSep = _index - 1;
                             } else if (c <= ' ') {
@@ -840,8 +843,9 @@ public final class XMLStreamReaderImpl implements XMLStreamReader {
                     if (c == '>') {
                         _start = --_index;
                         _state = STATE_CHARACTERS;
+                        _eventType = END_ELEMENT;
                         processEndTag();
-                        return _eventType = END_ELEMENT;
+                        return _eventType;
                     } else if (c > ' ') { throw new XMLStreamException(
                             "'>' expected", _location); }
                     break;
