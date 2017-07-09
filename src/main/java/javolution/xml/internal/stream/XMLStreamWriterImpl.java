@@ -18,6 +18,7 @@ import javolution.io.UTF8StreamWriter;
 import javolution.lang.Realtime;
 import javolution.text.CharArray;
 import javolution.text.TextBuilder;
+import javolution.xml.stream.Location;
 import javolution.xml.stream.XMLOutputFactory;
 import javolution.xml.stream.XMLStreamException;
 import javolution.xml.stream.XMLStreamWriter;
@@ -74,6 +75,15 @@ public final class XMLStreamWriterImpl implements XMLStreamWriter {
      * Holds the buffer current index.
      */
     private int _index;
+    
+    /* Holds the written bytes from buffer.
+    */
+    private long _totalCharsWritten = 0;
+    
+    /**
+    * Holds the location object.
+    */
+    private final LocationImpl _location = new LocationImpl();
 
     /** 
      * Holds repairing namespace property.
@@ -358,7 +368,7 @@ public final class XMLStreamWriterImpl implements XMLStreamWriter {
             if (_isEmptyElement) { // Closes the empty element tag.
                 closeOpenTag();
             } else { // Start element open.
-                if (_automaticEmptyElements) { // Do as if empty element written. 		    
+                if (_automaticEmptyElements) { // Do as if empty element written.           
                     _isEmptyElement = true;
                     closeOpenTag();
                     return;
@@ -548,7 +558,7 @@ public final class XMLStreamWriterImpl implements XMLStreamWriter {
 
     // Implements XMLStreamWriter interface.
     public void writeStartDocument(CharSequence encoding, CharSequence version) throws XMLStreamException{
-    	writeStartDocument(encoding, version, null);
+        writeStartDocument(encoding, version, null);
     }
     
     public void writeStartDocument(CharSequence encoding, CharSequence version, Boolean standAlone)
@@ -573,7 +583,7 @@ public final class XMLStreamWriterImpl implements XMLStreamWriter {
         }
         
         if(standAlone != null && standAlone){
-        	writeNoEscape(" standalone=\"yes\"");
+            writeNoEscape(" standalone=\"yes\"");
         }
         writeNoEscape("?>");
     }
@@ -887,6 +897,7 @@ public final class XMLStreamWriterImpl implements XMLStreamWriter {
                 if (blockLength > 0) {
                     _writer.write(_buffer, blockStart, blockLength);
                 }
+                _totalCharsWritten += blockLength;
                 blockStart = i;
                 switch (c) {
                     case '<':
@@ -916,6 +927,7 @@ public final class XMLStreamWriterImpl implements XMLStreamWriter {
             if (blockLength > 0) {
                 _writer.write(_buffer, blockStart, blockLength);
             }
+            _totalCharsWritten += blockLength;
         } catch (IOException e) {
             throw new XMLStreamException(e);
         }
@@ -940,8 +952,67 @@ public final class XMLStreamWriterImpl implements XMLStreamWriter {
         } catch (IOException e) {
             throw new XMLStreamException(e);
         } finally {
+            _totalCharsWritten += _index;
             _index = 0;
         }
     }
+    
+    public LocationImpl getLocation() {
+        return _location;
+    }
+    
+    /**
+     * This inner class represents the parser location.<br>
+     * getLineNumber() and getColumnNumber() does not work with custom indentation
+     */
+    public final class LocationImpl implements Location {
+
+      int _charactersWritten;
+
+      long _lastStartTagPos;
+
+      public int getLineNumber() {
+        return 1;
+      }
+
+      public int getColumnNumber() {
+        return getCharacterOffset();
+      }
+
+      public int getCharacterOffset() {
+        return (int) (_totalCharsWritten + _index + 1);
+      }
+
+      public long getCharacterOffsetInLong() {
+        return _totalCharsWritten + _index + 1;
+      }
+
+      public long getLastStartTagPos() {
+        return _lastStartTagPos;
+      }
+
+      public long getTotalCharsWritten() {
+        return _totalCharsWritten;
+      }
+
+      public String getPublicId() {
+        return null; // Not available.
+      }
+
+      public String getSystemId() {
+        return null; // Not available.
+      }
+
+      public String toString() {
+        return "Line " + getLineNumber() + ", Column " + getColumnNumber();
+      }
+
+      public void reset() {
+        _charactersWritten = 0;
+        _lastStartTagPos = -1;
+        _totalCharsWritten = 0;
+      }
+
+  }
 
 }
